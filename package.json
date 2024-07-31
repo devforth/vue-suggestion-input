@@ -1,7 +1,7 @@
 {
   "name": "vue-suggestion-input",
   "private": false,
-  "version": "0.0.5",
+  "version": "0.0.6",
   "type": "module",
   "files": [
     "dist"
@@ -13,7 +13,7 @@
       "import": "./dist/vue-suggestion-input.js",
       "require": "./dist/vue-suggestion-input.umd.cjs"
     },
-     "./dist/style.css": "./dist/style.css"
+    "./dist/style.css": "./dist/style.css"
   },
   "scripts": {
     "dev": "vite",
