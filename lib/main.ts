@@ -1,2 +1,2 @@
 import VueSuggestionInput from './suggestion-input.vue'
-export { VueSuggestionInput }
+export default VueSuggestionInput;
