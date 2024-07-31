@@ -12,7 +12,8 @@
     ".": {
       "import": "./dist/vue-suggestion-input.js",
       "require": "./dist/vue-suggestion-input.umd.cjs"
-    }
+    },
+     "./dist/style.css": "./dist/style.css"
   },
   "scripts": {
     "dev": "vite",
