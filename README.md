@@ -31,6 +31,7 @@ Script:
 
 ```javascript
 import SuggestionInput from 'vue-suggestion-input'
+import 'vue-suggestion-input/dist/style.css';
 
 const currentValue = ref('');
 
