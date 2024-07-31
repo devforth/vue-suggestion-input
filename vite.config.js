@@ -5,6 +5,8 @@ import vue from '@vitejs/plugin-vue';
 export default defineConfig({
     plugins: [vue()],
     build: {
+        // for styles to work
+        cssCodeSplit: false,
         lib: {
             entry: resolve(__dirname, 'lib/main.ts'),
             name: 'VueSuggestionInput',
