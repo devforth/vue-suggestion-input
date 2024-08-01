@@ -7,19 +7,19 @@
       @keydown.ctrl.down.prevent.stop="startCompletion()"
       :data-with-complete="completion !== null"
       :class="`type-${props.type}`"
-  >
-  </div>
+  ></div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref, onUnmounted, watch } from "vue";
 import Quill from "quill";
+import "quill/dist/quill.core.css";
 
 const BlockEmbed = Quill.import('blots/block/embed');
 
-function dbg(...args: any[]) {
-  return;
-  console.log(...args);
+function dbg(title: string,...args: any[]) {
+  // return;
+  console.log(title, ...args.map(a =>JSON.stringify(a, null, 1))); 
 }
 
 // @ts-ignore
@@ -48,10 +48,10 @@ Quill.register(CompleteBlot);
 interface Props {
   modelValue: string;
   completionRequest: () => Promise<string>;
-  debounceTime: number;
-  delimiter: string;
-  type: 'string' | 'json';
-  placeholder: string;
+  debounceTime?: number;
+  delimiter?: string;
+  type?: 'string' | 'json';
+  placeholder?: string;
 }
 
 const props = withDefaults(
@@ -59,6 +59,7 @@ const props = withDefaults(
     debounceTime: 300,
     delimiter: '\n',
     type: 'string',
+    placeholder: 'Type here...',
   }
 );
 
@@ -72,6 +73,19 @@ let quill: any = null;
 
 let lastText: string | null = null;
 
+
+function removeCompletionOnBlur() {
+  if (lastText?.trim().length === 0) {
+    completion.value = null;
+    const d = quill.getContents();
+    const i = d.ops.findIndex((op: any) => op.insert.complete);
+    if (i !== -1) {
+      d.ops.splice(i, 1);
+      quill.setContents(d, 'silent');
+      dbg('🧹 Cleaned completion from ops to make ph visible');
+    }
+  }
+}
 
 async function emitTextUpdate() {
   let text = quill.getText();
@@ -92,17 +106,16 @@ async function emitTextUpdate() {
 
   lastText = text;
 
-  dbg('🪽 Text changed in suggestion-input, new text', JSON.stringify(text));
+  dbg('🪽 Text changed in suggestion-input, new text', text);
   await (new Promise((resolve) => setTimeout(resolve, 0)));
 
-  dbg('💥 1️⃣ emit value suggestion-input', JSON.stringify(text));
+  dbg('💥 1️⃣ emit value suggestion-input', text);
   emit('update:modelValue', text);
 }
 
 watch(() => props.modelValue, (value: string) => {
   if (value !== lastText) {
-    dbg('💨 external text update', JSON.stringify(value), 'we have text', JSON.stringify(lastText));
-
+    dbg('💨 external text update', value, 'we have text', lastText);
     quill.setText(value, 'silent');
     lastText = value;
   }
@@ -112,6 +125,7 @@ watch(() => props.modelValue, (value: string) => {
 onMounted(async () => {
   dbg('props type', props.type);
   dbg('props modelValue', props.modelValue);
+
   quill = new Quill(editor.value as HTMLElement, {
     theme: "snow",
     placeholder: props.placeholder || 'Type here...',
@@ -137,7 +151,7 @@ onMounted(async () => {
   lastText = quill.getText();
 
   quill.on(Quill.events.TEXT_CHANGE, async (delta: any, oldDelta: any, source: string) => {
-    dbg('🪽 TEXT_CHANGE fired ', JSON.stringify(delta, null, 1), JSON.stringify(oldDelta, null, 1), source);
+    dbg('🪽 TEXT_CHANGE fired ', delta, oldDelta, source);
     emitTextUpdate();
     // allow update to propagate
     startCompletion();
@@ -145,6 +159,11 @@ onMounted(async () => {
   
   quill.on('selection-change', (range: any, oldRange: any, source: string) => {
     dbg('🪽 selection changed', range, oldRange, source);
+    if (range === null) {
+      // blur event
+      removeCompletionOnBlur();
+      return;
+    }
     const text = quill.getText();
     // don't allow to select after completion
     if (range?.index === text.length) {
@@ -212,7 +231,7 @@ function approveCompletion(type: 'all' | 'word') {
     return;
   }
   
-  dbg(`💨 d before compl ${JSON.stringify(ops)}`);
+  dbg(`💨 d before compl`, ops);
 
   // before completion we need to remove last new line, it is added by quill
   ops[ops.length - 2].insert = ops[ops.length - 2].insert.replace(/\n$/g, '');
@@ -242,7 +261,7 @@ function approveCompletion(type: 'all' | 'word') {
       needComplete = true;
     }
   }
-  dbg(`💨 d after compl ${JSON.stringify(ops)}`);
+  dbg(`💨 d after compl`, ops);
 
   // set cursor to the end
   const textNew = quill.getText();
@@ -259,8 +278,14 @@ function approveCompletion(type: 'all' | 'word') {
 <style lang="scss">
 .ql-editor {
   outline: none;
+  padding: 0;
   &:focus {
     outline: none;
+  }
+
+  &.ql-blank::before {
+    left: 5px;
+    font-style: normal;
   }
 }
 
@@ -281,6 +306,15 @@ function approveCompletion(type: 'all' | 'word') {
 .ql-editor:not(:focus) [completer] {
   display: none;
 }
+
+.ql-editor [completer] {
+  // text is not selectable
+  user-select: none;
+  -ms-user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+}
+
 
 .type-string {
   .ql-editor {
