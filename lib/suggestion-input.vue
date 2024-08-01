@@ -14,6 +14,7 @@
 import { onMounted, ref, onUnmounted, watch } from "vue";
 import Quill from "quill";
 import "quill/dist/quill.core.css";
+import AsyncQueue from "./async-queue.js";
 
 const BlockEmbed = Quill.import('blots/block/embed');
 
@@ -44,6 +45,10 @@ class CompleteBlot extends BlockEmbed {
 }
 // @ts-ignore
 Quill.register(CompleteBlot);
+
+
+const updaterQueue = new AsyncQueue();
+
 
 interface Props {
   modelValue: string;
@@ -91,7 +96,7 @@ async function emitTextUpdate() {
   let text = quill.getText();
 
   if (props.type === 'string' && text.includes('\n\n')) {
-    // allow position to stabilize, otherwise pos will be wrong
+    // allow position to stabilize, otherwise pos will be wrong (to reproduce click when completion is shown)
     await (new Promise((resolve) => setTimeout(resolve, 0)));
 
     const pos = quill.getSelection();
@@ -118,7 +123,7 @@ async function emitTextUpdate() {
 
 watch(() => props.modelValue, (value: string) => {
   if (value !== lastText) {
-    dbg('💨 external text update', value, 'we have text', lastText);
+    dbg('💨 external text update (watch modelValue)', value, 'we have text', lastText);
     quill.setText(value, 'silent');
     lastText = value;
   }
@@ -155,7 +160,7 @@ onMounted(async () => {
 
   quill.on(Quill.events.TEXT_CHANGE, async (delta: any, oldDelta: any, source: string) => {
     dbg('🪽 TEXT_CHANGE fired ', delta, oldDelta, source);
-    emitTextUpdate();
+    updaterQueue.add(emitTextUpdate);
     startCompletion();
   });
   
@@ -271,7 +276,7 @@ function approveCompletion(type: 'all' | 'word') {
   // set cursor to the end
   const textNew = quill.getText();
   quill.setSelection(textNew.length, 0, 'silent');
-  emitTextUpdate();
+  updaterQueue.add(emitTextUpdate);
 
   if (needComplete) {
     startCompletion();
