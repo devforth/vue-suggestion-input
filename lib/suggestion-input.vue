@@ -264,13 +264,13 @@ function approveCompletion(type: 'all' | 'word') {
   }
 }
 
-.ql-editor p:last-of-type {
-  display: inline;
-}
-
 .ql-container[data-with-complete="true"] .ql-editor {
   p:last-of-type br {
     display: none;
+  }
+
+  p:last-of-type {
+    display: inline;
   }
 }
 
