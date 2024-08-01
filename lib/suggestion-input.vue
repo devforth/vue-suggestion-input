@@ -91,7 +91,11 @@ async function emitTextUpdate() {
   let text = quill.getText();
 
   if (props.type === 'string' && text.includes('\n\n')) {
+    // allow position to stabilize, otherwise pos will be wrong
+    await (new Promise((resolve) => setTimeout(resolve, 0)));
+
     const pos = quill.getSelection();
+    dbg('🧹 remove double new lines', text, pos);
     const newText = text.replace(/\n\n/g, '');
     quill.setText(newText, 'silent');
     quill.setSelection(pos.index, 0, 'silent');
@@ -106,7 +110,6 @@ async function emitTextUpdate() {
 
   lastText = text;
 
-  dbg('🪽 Text changed in suggestion-input, new text', text);
   await (new Promise((resolve) => setTimeout(resolve, 0)));
 
   dbg('💥 1️⃣ emit value suggestion-input', text);
@@ -153,7 +156,6 @@ onMounted(async () => {
   quill.on(Quill.events.TEXT_CHANGE, async (delta: any, oldDelta: any, source: string) => {
     dbg('🪽 TEXT_CHANGE fired ', delta, oldDelta, source);
     emitTextUpdate();
-    // allow update to propagate
     startCompletion();
   });
   
@@ -167,6 +169,7 @@ onMounted(async () => {
     const text = quill.getText();
     // don't allow to select after completion
     if (range?.index === text.length) {
+      dbg('✋ prevent selection after completion');
       quill.setSelection(text.length - 1, 0, 'silent');
     }
   });
@@ -194,6 +197,7 @@ async function startCompletion() {
     const d = quill.getContents();
     const lastIsComplete = d.ops[d.ops.length - 1].insert.complete;
     const cursorPosition = quill.getSelection();
+    dbg('👇 get pos', cursorPosition.index, cursorPosition.length)
 
     if (!lastIsComplete) {
       dbg('✅ No completion yet, adding');
@@ -203,6 +207,7 @@ async function startCompletion() {
       d.ops[d.ops.length - 1].insert.complete.text = completionAnswer
     }
     quill.setContents(d, "silent");
+    dbg('👇 set pos', cursorPosition.index, cursorPosition.length)
     quill.setSelection(cursorPosition.index, cursorPosition.length, 'silent');
 
     completion.value = completionAnswer;
