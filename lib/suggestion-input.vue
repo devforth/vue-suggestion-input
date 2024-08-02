@@ -74,6 +74,7 @@ const emit = defineEmits([
 const editor = ref<HTMLElement>();
 const completion = ref<string | null>(null);
 let quill: any = null;
+const editorFocused= ref(false);
 
 let lastText: string | null = null;
 
@@ -128,6 +129,41 @@ watch(() => props.modelValue, (value: string) => {
   }
 });
 
+let xDown: null | number = null;
+let yDown: null | number = null;
+
+function handleTouchStart(evt: TouchEvent) {
+  xDown = evt.touches[0].clientX;
+  yDown = evt.touches[0].clientY;
+}
+
+function handleTouchMove(evt: TouchEvent) {
+  if (!xDown || !yDown) {
+    return;
+  }
+
+  let xUp = evt.touches[0].clientX;
+  let yUp = evt.touches[0].clientY;
+
+  let xDiff = xDown - xUp;
+  let yDiff = yDown - yUp;
+
+  if (Math.abs(xDiff) > Math.abs(yDiff)) {
+    if (xDiff < 0) {
+      // complete word if completion and input is focused
+      dbg('👇 swipe right', completion.value, editorFocused.value);
+      if (completion.value !== null && editorFocused.value) {
+        approveCompletion('word');
+        // [Intervention] Unable to preventDefault inside passive event listener due to target being treated as passive. See https://www.chromestatus.com/feature/5093566007214080
+        // evt.preventDefault();
+        evt.stopPropagation();
+      }
+    }
+  }
+
+  xDown = null;
+  yDown = null;
+}
 
 onMounted(async () => {
   dbg('props type', props.type);
@@ -168,7 +204,10 @@ onMounted(async () => {
     if (range === null) {
       // blur event
       removeCompletionOnBlur();
+      editorFocused.value = false;
       return;
+    } else {
+      editorFocused.value = true;
     }
     const text = quill.getText();
     // don't allow to select after completion
@@ -177,11 +216,23 @@ onMounted(async () => {
       quill.setSelection(text.length - 1, 0, 'silent');
     }
   });
+
+
+  // handle right swipe on mobile uding document/window, and console log if swiped in right direction
+  if ('ontouchstart' in window) {
+    document.addEventListener('touchstart', handleTouchStart, false);
+    document.addEventListener('touchmove', handleTouchMove, false);
+  }
 });
 
 onUnmounted(() => {
   quill.off(Quill.events.TEXT_CHANGE);
   quill.off('selection-change');
+
+  if ('ontouchstart' in window) {
+    document.removeEventListener('touchstart', handleTouchStart);
+    document.removeEventListener('touchmove', handleTouchMove);
+  }
 });
 
 
@@ -260,11 +311,13 @@ function approveCompletion(type: 'all' | 'word') {
   } else {
     const firstWord = completion.value.split(' ')[0] + ' ';
     const newCompletion = completion.value.slice(firstWord.length);
+    dbg('👇 newCompletion', newCompletion);
     ops[ops.length - 2].insert += firstWord;
 
     // update completion
     ops[ops.length - 1].insert.complete.text = newCompletion;
     quill.setContents({ ops }, 'silent');
+    completion.value = newCompletion;
 
     if (newCompletion.length === 0) {
       needComplete = true;
