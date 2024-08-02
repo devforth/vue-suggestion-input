@@ -32,7 +32,6 @@ class CompleteBlot extends BlockEmbed {
     let node = super.create();
     node.setAttribute('contenteditable', 'false');
     node.setAttribute('completer', '');
-    node.setAttribute('style', `opacity: 0.5`);
     node.innerText = value.text;
     return node;
   }
@@ -286,7 +285,9 @@ function approveCompletion(type: 'all' | 'word') {
 </script>
 
 <style lang="scss">
+
 .ql-editor {
+  position: relative;
   outline: none;
   padding: 0;
   &:focus {
@@ -294,7 +295,7 @@ function approveCompletion(type: 'all' | 'word') {
   }
 
   &.ql-blank::before {
-    left: 5px;
+    left: 0px;
     font-style: normal;
   }
 }
@@ -320,9 +321,11 @@ function approveCompletion(type: 'all' | 'word') {
 .ql-editor [completer] {
   // text is not selectable
   user-select: none;
-  -ms-user-select: none;
-  -moz-user-select: none;
-  -webkit-user-select: none;
+  pointer-events: none;
+  color: gray;
+
+  // if inline or inline used then user-select: none brakes triple click
+  display: contents;
 }
 
 
