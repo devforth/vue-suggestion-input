@@ -1,7 +1,6 @@
 <template>
   <div  
       ref="editor"
-      @click="startCompletion()"
       @keydown.tab.prevent.stop="approveCompletion('all')"
       @keydown.ctrl.right.prevent.stop="approveCompletion('word')"
       @keydown.ctrl.down.prevent.stop="startCompletion()"
@@ -19,7 +18,7 @@ import AsyncQueue from "./async-queue.js";
 const BlockEmbed = Quill.import('blots/block/embed');
 
 function dbg(title: string,...args: any[]) {
-  // return;
+  return; // uncomment for debug
   console.log(title, ...args.map(a =>JSON.stringify(a, null, 1))); 
 }
 
@@ -117,13 +116,13 @@ async function emitTextUpdate() {
 
   await (new Promise((resolve) => setTimeout(resolve, 0)));
 
-  dbg('💥 1️⃣ emit value suggestion-input', text);
+  dbg('⬆️ emit value suggestion-input', text);
   emit('update:modelValue', text);
 }
 
 watch(() => props.modelValue, (value: string) => {
   if (value !== lastText) {
-    dbg('💨 external text update (watch modelValue)', value, 'we have text', lastText);
+    dbg('🔽 external text update (watch modelValue)', value, 'we have text', lastText);
     quill.setText(value, 'silent');
     lastText = value;
   }
@@ -208,6 +207,7 @@ onMounted(async () => {
       return;
     } else {
       editorFocused.value = true;
+      startCompletion();
     }
     const text = quill.getText();
     // don't allow to select after completion
@@ -236,6 +236,10 @@ onUnmounted(() => {
 });
 
 
+// how to get completer blot
+// const blot = quill.getLine(cursorPosition.index);
+// const completeOnRightPlace = blot?.domNode?.querySelector('[completer]') !== null;
+
 let tmt: null | ReturnType<typeof setTimeout> = null;
 
 async function startCompletion() {
@@ -245,7 +249,7 @@ async function startCompletion() {
     clearTimeout(tmt);
   }
   tmt = setTimeout(async () => {
-
+    const currentTmt = tmt;
     const cursorPosition = quill.getSelection();
     dbg('👇 get pos', cursorPosition.index, cursorPosition.length)
     if (cursorPosition.length !== 0) {
@@ -263,15 +267,16 @@ async function startCompletion() {
     const textBeforeCursor = quill.getText(0, cursorPosition.index);
 
     const completionAnswer = await props.completionRequest(textBeforeCursor);
+    if (currentTmt !== tmt) {
+      // while we were waiting for completion, new completion was started
+      return;
+    }
     if (props.type === 'string') {
       completionAnswer.map((word, i) => {
         completionAnswer[i] = word.replace(/\n/g, ' ');
       });
     }
 
-
-    // const blot = quill.getLine(cursorPosition.index);
-    // const completeOnRightPlace = blot?.domNode?.querySelector('[completer]') !== null;
 
     const completeNode = quill.root.querySelector('[completer]');
     const completeBlot = Quill.find(completeNode);
@@ -297,61 +302,40 @@ async function startCompletion() {
 
 
 function approveCompletion(type: 'all' | 'word') { 
-  dbg('🪽 approveCompletion')
+  dbg('💨 approveCompletion')
 
   const ops = quill.getContents().ops;
   if (completion.value === null) {
     return;
   }
-  
-  const someTextIsInInout = ops.length >= 2;
 
-  if (someTextIsInInout && typeof ops[ops.length - 2].insert !== 'string') {
-    return;
-  }
-  
-  dbg(`💨 d before compl`, ops);
+  const cursorPosition = quill.getSelection();
 
-  // before completion we need to remove last new line, it is added by quill
-  ops[ops.length - 2].insert = ops[ops.length - 2].insert.replace(/\n$/g, '');
-
-  let needComplete = false;
+  let shouldComplete = false;
   if (type === 'all') {
-    if (someTextIsInInout) {
-      ops[ops.length - 2].insert += completion.value;
-    } else {
-      ops.push({ insert: completion.value });
-    }
-
-    quill.setContents({ ops }, 'silent');
-
-    needComplete = true;
-    
+    quill.insertText(cursorPosition.index, completion.value.join(''), 'silent');
+    shouldComplete = true;
   } else {
-    const firstWord = completion.value.split(' ')[0] + ' ';
-    const newCompletion = completion.value.slice(firstWord.length);
-    dbg('👇 newCompletion', newCompletion);
-    ops[ops.length - 2].insert += firstWord;
-
-    // update completion
-    ops[ops.length - 1].insert.complete.text = newCompletion;
-    quill.setContents({ ops }, 'silent');
-    completion.value = newCompletion;
-
-    if (newCompletion.length === 0) {
-      needComplete = true;
+    const word = completion.value[0];
+    quill.insertText(cursorPosition.index, word, 'silent');
+    completion.value = completion.value.slice(1);
+    if (completion.value.length === 0) {
+      shouldComplete = true;
+    } else {
+      // update completion
+      // TODO probably better way to update Embed?
+      const curCursorPos = quill.getSelection();
+      const d = quill.getContents();
+      d.ops.find((op: any) => op.insert.complete).insert.complete.text = completion.value.join('');
+      quill.setContents(d.ops, 'silent');
+      quill.setSelection(curCursorPos.index, curCursorPos.length, 'silent');
     }
   }
-  dbg(`💨 d after compl`, ops);
 
-  // set cursor to the end
-  const textNew = quill.getText();
-  quill.setSelection(textNew.length, 0, 'silent');
-  updaterQueue.add(emitTextUpdate);
-
-  if (needComplete) {
+  if (shouldComplete) {
     startCompletion();
   }
+
 }
 
 </script>
@@ -376,7 +360,7 @@ p:has(+ [completer]) br {
   display: none;
 }
 p:has(+ [completer]) {
-  background: rgb(255 227 227);  // debug
+  // background: rgb(255 227 227);  // debug
   display: inline;
 }
 
@@ -389,9 +373,10 @@ p:has(+ [completer]) {
 }
 
 .ql-editor [completer] {
+  // important to keep pointer-events non none for cursor position on completer click
+
   // text is not selectable
   user-select: none;
-  pointer-events: none;
   color: gray;
 
   // if inline or inline used then user-select: none brakes triple click

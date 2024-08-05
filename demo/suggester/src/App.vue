@@ -8,7 +8,7 @@
     <SuggestionInput 
         class="input"
         v-model="currentValue"
-        type="text"
+        type="string"
         :completionRequest="complete"
         :debounceTime="300"
         placeholder="Type something..."
@@ -38,12 +38,22 @@ const currentValue = ref('');
 
 
 async function complete(textBeforeCursor: string): Promise<string[]> {
+  console.log('✋ complete request', textBeforeCursor);
+
   // simulate delay
   await new Promise((resolve) => setTimeout(resolve, 400));
 
   // generate N random words of M length
   const numOfWords = Math.floor(Math.random() * 7) + 1;
   const words = Array.from({ length: numOfWords }, () => Math.random().toString(36).substring(2, 15));
+
+  // if textBeforeCursor has "br" in end - insert \n in random word at random place
+  if (textBeforeCursor.endsWith('br')) {
+    const randomWordIndex = Math.floor(Math.random() * words.length);
+    const pos = Math.floor(Math.random() * words[randomWordIndex].length);
+    words[randomWordIndex] = words[randomWordIndex].substring(0, pos) + '\n' + words[randomWordIndex].substring(pos);
+  }
+
   return words.map((word) => `${word} `);
 }
 
