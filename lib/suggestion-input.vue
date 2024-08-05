@@ -17,7 +17,7 @@ import AsyncQueue from "./async-queue.js";
 const BlockEmbed = Quill.import('blots/block/embed');
 
 function dbg(title: string,...args: any[]) {
-  return; // comment for debug
+  // return; // comment for debug
   console.log(title, ...args.map(a =>JSON.stringify(a, null, 1))); 
 }
 
@@ -197,24 +197,24 @@ onMounted(async () => {
     startCompletion();
   });
   
-  quill.on('selection-change', (range: any, oldRange: any, source: string) => {
-    dbg('🪽 selection changed', range, oldRange, source);
-    if (range === null) {
-      // blur event
-      removeCompletionOnBlur();
-      editorFocused.value = false;
-      return;
-    } else {
-      editorFocused.value = true;
-      startCompletion();
-    }
-    const text = quill.getText();
-    // don't allow to select after completion
-    if (range?.index === text.length) {
-      dbg('✋ prevent selection after completion');
-      quill.setSelection(text.length - 1, 0, 'silent');
-    }
-  });
+  // quill.on('selection-change', (range: any, oldRange: any, source: string) => {
+  //   dbg('🪽 selection changed', range, oldRange, source);
+  //   if (range === null) {
+  //     // blur event
+  //     removeCompletionOnBlur();
+  //     editorFocused.value = false;
+  //     return;
+  //   } else {
+  //     editorFocused.value = true;
+  //     startCompletion();
+  //   }
+  //   const text = quill.getText();
+  //   // don't allow to select after completion
+  //   if (range?.index === text.length) {
+  //     dbg('✋ prevent selection after completion');
+  //     quill.setSelection(text.length - 1, 0, 'silent');
+  //   }
+  // });
 
 
   // handle right swipe on mobile uding document/window, and console log if swiped in right direction
@@ -243,7 +243,8 @@ let tmt: null | ReturnType<typeof setTimeout> = null;
 
 async function startCompletion() {
   completion.value = null;
-  updateCompleteEmbed(' ');
+  // return;
+  deleteCompleteEmbed();
 
   if (tmt) {
     clearTimeout(tmt);
@@ -280,15 +281,7 @@ async function startCompletion() {
     }
 
 
-    const completeNode = quill.root.querySelector('[completer]');
-    const completeBlot = Quill.find(completeNode);
-    const blotIdx: number | null = completeBlot ? quill.getIndex(completeBlot) : null;
-
-    dbg('👇 complete blot idx', blotIdx);
-
-    if (blotIdx !== null) {
-      quill.deleteText(blotIdx, 1, 'silent');
-    }
+    // deleteCompleteEmbed();
     // insert on +1 to insert after \n
     quill.insertEmbed(cursorPosition.index + 1, 'complete', { text: completionAnswer.join('') }, 'silent');
 
@@ -312,6 +305,18 @@ function updateCompleteEmbed(text: string) {
   c.insert.complete.text = text;
   quill.setContents(d.ops, 'silent');
   quill.setSelection(curCursorPos.index, curCursorPos.length, 'silent');
+}
+
+function deleteCompleteEmbed() {
+  const completeNode = quill.root.querySelector('[completer]');
+  const completeBlot = Quill.find(completeNode);
+  const blotIdx: number | null = completeBlot ? quill.getIndex(completeBlot) : null;
+
+  dbg('👇 complete blot idx', blotIdx);
+
+  if (blotIdx !== null) {
+    quill.deleteText(blotIdx, 1, 'silent');
+  }
 }
 
 function approveCompletion(type: 'all' | 'word') { 

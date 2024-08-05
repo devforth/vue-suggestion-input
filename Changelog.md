@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -
 
+## [0.0.14] - 2024-08-05
+
+### Fixed
+- Cursor position after typing after enter
+
+
+
 ## [0.0.13] - 2024-08-05
 
 ### Fixed
