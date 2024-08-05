@@ -8,7 +8,7 @@
     <SuggestionInput 
         class="input"
         v-model="currentValue"
-        type="string"
+        type="text"
         :completionRequest="complete"
         :debounceTime="300"
         placeholder="Type something..."

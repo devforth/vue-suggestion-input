@@ -4,7 +4,6 @@
       @keydown.tab.prevent.stop="approveCompletion('all')"
       @keydown.ctrl.right.prevent.stop="approveCompletion('word')"
       @keydown.ctrl.down.prevent.stop="startCompletion()"
-      :data-with-complete="completion !== null"
       :class="`type-${props.type}`"
   ></div>
 </template>
@@ -18,7 +17,7 @@ import AsyncQueue from "./async-queue.js";
 const BlockEmbed = Quill.import('blots/block/embed');
 
 function dbg(title: string,...args: any[]) {
-  return; // uncomment for debug
+  return; // comment for debug
   console.log(title, ...args.map(a =>JSON.stringify(a, null, 1))); 
 }
 
@@ -73,7 +72,7 @@ const emit = defineEmits([
 const editor = ref<HTMLElement>();
 const completion = ref<string[] | null>(null);
 let quill: any = null;
-const editorFocused= ref(false);
+const editorFocused = ref(false);
 
 let lastText: string | null = null;
 
@@ -244,6 +243,7 @@ let tmt: null | ReturnType<typeof setTimeout> = null;
 
 async function startCompletion() {
   completion.value = null;
+  updateCompleteEmbed(' ');
 
   if (tmt) {
     clearTimeout(tmt);
@@ -271,6 +271,8 @@ async function startCompletion() {
       // while we were waiting for completion, new completion was started
       return;
     }
+    
+
     if (props.type === 'string') {
       completionAnswer.map((word, i) => {
         completionAnswer[i] = word.replace(/\n/g, ' ');
@@ -300,11 +302,21 @@ async function startCompletion() {
   }, props.debounceTime || 300);
 }
 
+function updateCompleteEmbed(text: string) {
+  const curCursorPos = quill.getSelection();
+  const d = quill.getContents();
+  const c = d.ops.find((op: any) => op.insert.complete);
+  if (!c) {
+    return;
+  }
+  c.insert.complete.text = text;
+  quill.setContents(d.ops, 'silent');
+  quill.setSelection(curCursorPos.index, curCursorPos.length, 'silent');
+}
 
 function approveCompletion(type: 'all' | 'word') { 
   dbg('💨 approveCompletion')
 
-  const ops = quill.getContents().ops;
   if (completion.value === null) {
     return;
   }
@@ -324,11 +336,7 @@ function approveCompletion(type: 'all' | 'word') {
     } else {
       // update completion
       // TODO probably better way to update Embed?
-      const curCursorPos = quill.getSelection();
-      const d = quill.getContents();
-      d.ops.find((op: any) => op.insert.complete).insert.complete.text = completion.value.join('');
-      quill.setContents(d.ops, 'silent');
-      quill.setSelection(curCursorPos.index, curCursorPos.length, 'silent');
+      updateCompleteEmbed(completion.value.join(''));
     }
   }
 
@@ -364,10 +372,6 @@ p:has(+ [completer]) {
   display: inline;
 }
 
-.ql-container[data-with-complete="false"] [completer] {
-  display: none;
-}
-
 .ql-editor:not(:focus) [completer] {
   display: none;
 }
@@ -383,9 +387,4 @@ p:has(+ [completer]) {
   display: contents;
 }
 
-
-.type-string {
-  .ql-editor {
-  }
-}
 </style>
