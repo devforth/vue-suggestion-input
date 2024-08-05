@@ -8,7 +8,7 @@
     <SuggestionInput 
         class="input"
         v-model="currentValue"
-        type="string"
+        type="text"
         :completionRequest="complete"
         :debounceTime="300"
         placeholder="Type something..."
@@ -37,14 +37,14 @@ import { ref } from 'vue';
 const currentValue = ref('');
 
 
-async function complete() {
+async function complete(textBeforeCursor: string): Promise<string[]> {
   // simulate delay
   await new Promise((resolve) => setTimeout(resolve, 400));
 
   // generate N random words of M length
   const numOfWords = Math.floor(Math.random() * 7) + 1;
   const words = Array.from({ length: numOfWords }, () => Math.random().toString(36).substring(2, 15));
-  return words.join(' ');
+  return words.map((word) => `${word} `);
 }
 
 </script>

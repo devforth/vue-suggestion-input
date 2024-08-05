@@ -1,7 +1,7 @@
 <template>
   <div  
       ref="editor"
-      @click="startCompletionIfEmpty"
+      @click="startCompletion()"
       @keydown.tab.prevent.stop="approveCompletion('all')"
       @keydown.ctrl.right.prevent.stop="approveCompletion('word')"
       @keydown.ctrl.down.prevent.stop="startCompletion()"
@@ -51,10 +51,10 @@ const updaterQueue = new AsyncQueue();
 
 interface Props {
   modelValue: string;
-  completionRequest: () => Promise<string>;
+  completionRequest: (textBeforeCursor: string) => Promise<string[]>;
   debounceTime?: number;
   delimiter?: string;
-  type?: 'string' | 'json';
+  type?: 'string' | 'text';
   placeholder?: string;
 }
 
@@ -72,7 +72,7 @@ const emit = defineEmits([
 ]);
 
 const editor = ref<HTMLElement>();
-const completion = ref<string | null>(null);
+const completion = ref<string[] | null>(null);
 let quill: any = null;
 const editorFocused= ref(false);
 
@@ -245,43 +245,62 @@ async function startCompletion() {
     clearTimeout(tmt);
   }
   tmt = setTimeout(async () => {
-    let completionAnswer = await props.completionRequest();
-    if (props.type === 'string') {
-      completionAnswer = completionAnswer.replace(/\n/g, ' ');
-    }
-    const d = quill.getContents();
-    const lastIsComplete = d.ops[d.ops.length - 1].insert.complete;
+
     const cursorPosition = quill.getSelection();
     dbg('👇 get pos', cursorPosition.index, cursorPosition.length)
-
-    if (!lastIsComplete) {
-      dbg('✅ No completion yet, adding');
-      d.ops.push({ insert: { complete: { text: completionAnswer } } });
-    } else {
-      dbg('✅ Completion already exists, updating');
-      d.ops[d.ops.length - 1].insert.complete.text = completionAnswer
+    if (cursorPosition.length !== 0) {
+      // we will not complete if text selected
+      return;
     }
-    quill.setContents(d, "silent");
+
+    const charAfterCursor = quill.getText(cursorPosition.index, 1);
+    dbg('👇 charAfterCursor', charAfterCursor);
+    if (charAfterCursor !== '\n') {
+      // we will not complete if not at the end of the line
+      return;
+    }
+
+    const textBeforeCursor = quill.getText(0, cursorPosition.index);
+
+    const completionAnswer = await props.completionRequest(textBeforeCursor);
+    if (props.type === 'string') {
+      completionAnswer.map((word, i) => {
+        completionAnswer[i] = word.replace(/\n/g, ' ');
+      });
+    }
+
+
+    // const blot = quill.getLine(cursorPosition.index);
+    // const completeOnRightPlace = blot?.domNode?.querySelector('[completer]') !== null;
+
+    const completeNode = quill.root.querySelector('[completer]');
+    const completeBlot = Quill.find(completeNode);
+    const blotIdx: number | null = completeBlot ? quill.getIndex(completeBlot) : null;
+
+    dbg('👇 complete blot idx', blotIdx);
+
+    if (blotIdx !== null) {
+      quill.deleteText(blotIdx, 1, 'silent');
+    }
+    // insert on +1 to insert after \n
+    quill.insertEmbed(cursorPosition.index + 1, 'complete', { text: completionAnswer.join('') }, 'silent');
+
     dbg('👇 set pos', cursorPosition.index, cursorPosition.length)
     quill.setSelection(cursorPosition.index, cursorPosition.length, 'silent');
 
     completion.value = completionAnswer;
 
+    dbg('👇 completion finished', quill.getContents());
+
   }, props.debounceTime || 300);
 }
 
-function startCompletionIfEmpty() {
-  const d = quill.getContents();
-  if (!d.ops[d.ops.length - 1].insert.complete) {
-    startCompletion();
-  }
-}
 
 function approveCompletion(type: 'all' | 'word') { 
   dbg('🪽 approveCompletion')
 
   const ops = quill.getContents().ops;
-  if (!completion.value) {
+  if (completion.value === null) {
     return;
   }
   
@@ -353,14 +372,12 @@ function approveCompletion(type: 'all' | 'word') {
   }
 }
 
-.ql-container[data-with-complete="true"] .ql-editor {
-  p:last-of-type br {
-    display: none;
-  }
-
-  p:last-of-type {
-    display: inline;
-  }
+p:has(+ [completer]) br {
+  display: none;
+}
+p:has(+ [completer]) {
+  background: rgb(255 227 227);  // debug
+  display: inline;
 }
 
 .ql-container[data-with-complete="false"] [completer] {
