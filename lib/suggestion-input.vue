@@ -345,6 +345,8 @@ function approveCompletion(type: 'all' | 'word') {
     }
   }
 
+  updaterQueue.add(emitTextUpdate);
+
   if (shouldComplete) {
     startCompletion();
   }

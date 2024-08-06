@@ -14,6 +14,8 @@
         placeholder="Type something..."
     />
 
+    <div class="cv">Current value:</div>
+    <pre>{{ currentValue }}</pre>
   </div>
 </template>
 
@@ -25,6 +27,19 @@
   padding: 5px;
   border: 1px solid #ccc;
   border-radius: 5px;
+}
+
+.cv {
+  margin-top: 2rem;
+  font-size: 1rem;
+}
+
+pre {
+  font-size: 1rem;
+  background-color: #f5f5f5;
+  padding: 1rem;
+  border-radius: 5px;
+  white-space: normal;
 }
 </style>
 
