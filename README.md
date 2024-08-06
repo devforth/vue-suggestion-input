@@ -8,7 +8,7 @@ Text input with Tab-to-complete suggestions in a Github Copilot style (dimmed ou
 
 ![vue-suggestion-input preview](./image.png)
 
-Plugin in action (with Tailwind CSS and Chat-GPT API):
+Plugin in action (with Tailwind CSS and [Chat-GPT API](https://adminforth.dev/docs/tutorial/Advanced/plugin-development/)):
 ![vue-suggestion-input demo](https://adminforth.dev/assets/images/demoChatGpt-cb045146add2758d6fb571efef680e80.gif)
 
 Example:
