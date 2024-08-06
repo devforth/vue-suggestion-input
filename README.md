@@ -6,8 +6,10 @@ Text input with Tab-to-complete suggestions in a Github Copilot style (dimmed ou
 * **Ctrl + Right** to complete word (up to next space)
 * **Ctrl + Down** to re-init completion
 
-![alt text](./image.png)
+![vue-suggestion-input preview](./image.png)
 
+Plugin in action (with Tailwind CSS and Chat-GPT API):
+![vue-suggestion-input demo](https://adminforth.dev/assets/images/demoChatGpt-cb045146add2758d6fb571efef680e80.gif)
 
 Example:
 
