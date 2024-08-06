@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -
 
+
+## [0.0.15] - 2024-08-06
+
+### Fixed
+- React to cursor change to start completion request
+
+### Changed
+- Completion is now italics
+
+
 ## [0.0.14] - 2024-08-05
 
 ### Fixed

@@ -197,24 +197,24 @@ onMounted(async () => {
     startCompletion();
   });
   
-  // quill.on('selection-change', (range: any, oldRange: any, source: string) => {
-  //   dbg('🪽 selection changed', range, oldRange, source);
-  //   if (range === null) {
-  //     // blur event
-  //     removeCompletionOnBlur();
-  //     editorFocused.value = false;
-  //     return;
-  //   } else {
-  //     editorFocused.value = true;
-  //     startCompletion();
-  //   }
-  //   const text = quill.getText();
-  //   // don't allow to select after completion
-  //   if (range?.index === text.length) {
-  //     dbg('✋ prevent selection after completion');
-  //     quill.setSelection(text.length - 1, 0, 'silent');
-  //   }
-  // });
+  quill.on('selection-change', (range: any, oldRange: any, source: string) => {
+    dbg('🪽 selection changed', range, oldRange, source);
+    if (range === null) {
+      // blur event
+      removeCompletionOnBlur();
+      editorFocused.value = false;
+      return;
+    } else {
+      editorFocused.value = true;
+      startCompletion();
+    }
+    const text = quill.getText();
+    // don't allow to select after completion
+    if (range?.index === text.length) {
+      dbg('✋ prevent selection after completion');
+      quill.setSelection(text.length - 1, 0, 'silent');
+    }
+  });
 
 
   // handle right swipe on mobile uding document/window, and console log if swiped in right direction
@@ -390,6 +390,8 @@ p:has(+ [completer]) {
 
   // if inline or inline used then user-select: none brakes triple click
   display: contents;
+
+  font-style: italic;
 }
 
 </style>
