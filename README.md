@@ -6,7 +6,7 @@ Text input with Tab-to-complete suggestions in a Github Copilot style (dimmed ou
 * **Ctrl + Right** to complete word (up to next space)
 * **Ctrl + Down** to re-init completion
 
-![alt text](image.png)
+![alt text](./image.png)
 
 
 Example:

@@ -2,6 +2,10 @@
   "name": "vue-suggestion-input",
   "private": false,
   "version": "0.0.16",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devforth/vue-suggestion-input"
+  },
   "type": "module",
   "files": [
     "dist"
