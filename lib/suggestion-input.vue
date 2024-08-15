@@ -1,5 +1,5 @@
 <template>
-  <div  
+  <div class="sg-input-top-wrapper"
       ref="editor"
       @keydown.tab.prevent.stop="approveCompletion('all')"
       @keydown.ctrl.right.prevent.stop="approveCompletion('word')"
@@ -357,43 +357,44 @@ function approveCompletion(type: 'all' | 'word') {
 
 <style lang="scss">
 
-.ql-editor {
-  position: relative;
-  outline: none;
-  padding: 0;
-  &:focus {
+.sg-input-top-wrapper {
+  .ql-editor[class] {
+    position: relative;
     outline: none;
+    padding: 0;
+    &:focus {
+      outline: none;
+    }
+
+    &.ql-blank::before {
+      left: 0px;
+      font-style: normal;
+    }
   }
 
-  &.ql-blank::before {
-    left: 0px;
-    font-style: normal;
+  p:has(+ [completer]) br {
+    display: none;
+  }
+  p:has(+ [completer]) {
+    // background: rgb(255 227 227);  // debug
+    display: inline;
+  }
+
+  .ql-editor:not(:focus) [completer] {
+    display: none;
+  }
+
+  .ql-editor [completer] {
+    // important to keep pointer-events non none for cursor position on completer click
+
+    // text is not selectable
+    user-select: none;
+    color: gray;
+
+    // if inline or inline used then user-select: none brakes triple click
+    display: contents;
+
+    font-style: italic;
   }
 }
-
-p:has(+ [completer]) br {
-  display: none;
-}
-p:has(+ [completer]) {
-  // background: rgb(255 227 227);  // debug
-  display: inline;
-}
-
-.ql-editor:not(:focus) [completer] {
-  display: none;
-}
-
-.ql-editor [completer] {
-  // important to keep pointer-events non none for cursor position on completer click
-
-  // text is not selectable
-  user-select: none;
-  color: gray;
-
-  // if inline or inline used then user-select: none brakes triple click
-  display: contents;
-
-  font-style: italic;
-}
-
 </style>
