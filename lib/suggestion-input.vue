@@ -173,6 +173,13 @@ onMounted(async () => {
     formats : ['complete'],
     modules: {
       toolbar: null,
+      clipboard: {
+        matchers: [
+          ['*', function() {
+            return { ops: [{ insert: '\n' }] };
+          }]
+        ]
+      },
       keyboard: {
         bindings: {
           tab: {
@@ -182,10 +189,19 @@ onMounted(async () => {
                 return true;
               }
             },
-          },
+          }
         },
       }
     },
+  });
+
+  editor.value?.addEventListener('paste', (e: ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData?.getData('text/plain') || '';
+    const selection = quill.getSelection();
+    if (selection) {
+      quill.insertText(selection.index, text, 'user');
+    }
   });
 
   quill.setText(props.modelValue, 'silent');
@@ -227,6 +243,8 @@ onMounted(async () => {
 onUnmounted(() => {
   quill.off(Quill.events.TEXT_CHANGE);
   quill.off('selection-change');
+
+  editor.value?.removeEventListener('paste', handlePaste);
 
   if ('ontouchstart' in window) {
     document.removeEventListener('touchstart', handleTouchStart);
