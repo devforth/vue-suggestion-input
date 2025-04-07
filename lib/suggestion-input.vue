@@ -163,6 +163,15 @@ function handleTouchMove(evt: TouchEvent) {
   yDown = null;
 }
 
+const handlePaste = (e: ClipboardEvent) => {
+  e.preventDefault();
+  const text = e.clipboardData?.getData('text/plain') || '';
+  const selection = quill.getSelection();
+  if (selection) {
+    quill.insertText(selection.index, text, 'user');
+  }
+};
+
 onMounted(async () => {
   dbg('props type', props.type);
   dbg('props modelValue', props.modelValue);
@@ -195,14 +204,7 @@ onMounted(async () => {
     },
   });
 
-  editor.value?.addEventListener('paste', (e: ClipboardEvent) => {
-    e.preventDefault();
-    const text = e.clipboardData?.getData('text/plain') || '';
-    const selection = quill.getSelection();
-    if (selection) {
-      quill.insertText(selection.index, text, 'user');
-    }
-  });
+  editor.value?.addEventListener('paste', handlePaste);
 
   quill.setText(props.modelValue, 'silent');
   lastText = quill.getText();
