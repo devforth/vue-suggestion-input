@@ -373,6 +373,10 @@ function approveCompletion(type: 'all' | 'word') {
 
 }
 
+defineExpose({
+  approveCompletion
+});
+
 </script>
 
 <style lang="scss">
