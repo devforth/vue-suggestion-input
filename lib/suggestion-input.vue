@@ -292,14 +292,12 @@ async function startCompletion() {
       // while we were waiting for completion, new completion was started
       return;
     }
-    
 
     if (props.type === 'string') {
       completionAnswer.map((word, i) => {
         completionAnswer[i] = word.replace(/\n/g, ' ');
       });
     }
-
 
     // deleteCompleteEmbed();
     // insert on +1 to insert after \n
