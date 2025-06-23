@@ -81,10 +81,12 @@ function removeCompletionOnBlur() {
   if (lastText?.trim().length === 0) {
     completion.value = null;
     const d = quill.getContents();
-    const i = d.ops.findIndex((op: any) => op.insert.complete);
-    if (i !== -1) {
-      d.ops.splice(i, 1);
-      quill.setContents(d, 'silent');
+    if (!d.ops) {
+      return;
+    }
+    const newOps = d.ops.filter((op: any) => !(op.insert && op.insert.complete));
+    if (newOps.length < d.ops.length) {
+      quill.setContents(newOps, 'silent');
       dbg('🧹 Cleaned completion from ops to make ph visible');
     }
   }
@@ -168,7 +170,9 @@ const handlePaste = (e: ClipboardEvent) => {
   const text = e.clipboardData?.getData('text/plain') || '';
   const selection = quill.getSelection();
   if (selection) {
+    quill.deleteText(selection.index, selection.length, 'user');
     quill.insertText(selection.index, text, 'user');
+    quill.setSelection(selection.index + text.length, 0, 'user');
   }
 };
 
@@ -184,9 +188,9 @@ onMounted(async () => {
       toolbar: null,
       clipboard: {
         matchers: [
-          ['*', function() {
+          /*['*', function() {
             return { ops: [{ insert: '\n' }] };
-          }]
+          }]*/
         ]
       },
       keyboard: {
@@ -326,14 +330,20 @@ function updateCompleteEmbed(text: string) {
 }
 
 function deleteCompleteEmbed() {
-  const completeNode = quill.root.querySelector('[completer]');
-  const completeBlot = Quill.find(completeNode);
-  const blotIdx: number | null = completeBlot ? quill.getIndex(completeBlot) : null;
+  const d = quill.getContents();
+  if (!d.ops) {
+    return;
+  }
+  const selection = quill.getSelection();
 
-  dbg('👇 complete blot idx', blotIdx);
+  const newOps = d.ops.filter((op: any) => !(op.insert && op.insert.complete));
 
-  if (blotIdx !== null) {
-    quill.deleteText(blotIdx, 1, 'silent');
+  if (newOps.length < d.ops.length) {
+    quill.setContents(newOps, 'silent');
+    dbg('👇 deleting complete blots');
+    if (selection) {
+      quill.setSelection(selection, 'silent');
+    }
   }
 }
 
