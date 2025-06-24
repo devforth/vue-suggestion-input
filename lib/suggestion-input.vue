@@ -188,9 +188,9 @@ onMounted(async () => {
       toolbar: null,
       clipboard: {
         matchers: [
-          /*['*', function() {
-            return { ops: [{ insert: '\n' }] };
-          }]*/
+          ['*', function() {
+            return { ops: [] };
+          }]
         ]
       },
       keyboard: {
