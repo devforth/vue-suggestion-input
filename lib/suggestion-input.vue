@@ -67,6 +67,7 @@ const props = withDefaults(
 
 const emit = defineEmits([
   'update:modelValue',
+  'completion-approved'
 ]);
 
 const editor = ref<HTMLElement>();
@@ -353,6 +354,8 @@ function approveCompletion(type: 'all' | 'word') {
   if (completion.value === null) {
     return;
   }
+  
+  emit('completion-approved', type);
 
   const cursorPosition = quill.getSelection();
 
