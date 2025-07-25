@@ -167,7 +167,9 @@ function handleTouchMove(evt: TouchEvent) {
 }
 
 const handlePaste = (e: ClipboardEvent) => {
+  e.stopImmediatePropagation();
   e.preventDefault();
+
   const text = e.clipboardData?.getData('text/plain') || '';
   const selection = quill.getSelection();
   if (selection) {
@@ -209,7 +211,7 @@ onMounted(async () => {
     },
   });
 
-  editor.value?.addEventListener('paste', handlePaste);
+  editor.value?.addEventListener('paste', handlePaste, true);
 
   quill.setText(props.modelValue, 'silent');
   lastText = quill.getText();
