@@ -76,6 +76,7 @@ let quill: any = null;
 const editorFocused = ref(false);
 
 let lastText: string | null = null;
+let lastKnownCursorIndex: any = null;
 
 
 function removeCompletionOnBlur() {
@@ -218,28 +219,40 @@ onMounted(async () => {
 
   quill.on(Quill.events.TEXT_CHANGE, async (delta: any, oldDelta: any, source: string) => {
     dbg('🪽 TEXT_CHANGE fired ', delta, oldDelta, source);
+    const isEmpty = quill.getLength() <= 4;
+    if(completion.value && isEmpty){
+      quill.setSelection(1,0,'silent')
+    }
     updaterQueue.add(emitTextUpdate);
     startCompletion();
   });
   
   quill.on('selection-change', (range: any, oldRange: any, source: string) => {
     dbg('🪽 selection changed', range, oldRange, source);
-    if (range === null) {
-      // blur event
-      removeCompletionOnBlur();
-      editorFocused.value = false;
-      return;
-    } else {
-      editorFocused.value = true;
-      startCompletion();
+
+  if (range === null) {
+    // blur
+    editorFocused.value = false;
+    removeCompletionOnBlur();
+
+    if (oldRange && typeof oldRange.index === 'number') {
+      lastKnownCursorIndex = oldRange; 
     }
-    const text = quill.getText();
-    // don't allow to select after completion
-    if (range?.index === text.length) {
-      dbg('✋ prevent selection after completion');
-      quill.setSelection(text.length - 1, 0, 'silent');
-    }
-  });
+    return;
+  }
+
+  if (!editorFocused.value && lastKnownCursorIndex) {
+    quill.setSelection(lastKnownCursorIndex.index, lastKnownCursorIndex.length || 0, 'silent');
+    lastKnownCursorIndex = null; 
+  }
+
+  editorFocused.value = true;
+  startCompletion();
+  const text = quill.getText();
+  if (range.index === text.length) {
+    quill.setSelection(text.length - 1, 0, 'silent');
+  }
+});
 
 
   // handle right swipe on mobile uding document/window, and console log if swiped in right direction
@@ -279,7 +292,7 @@ async function startCompletion() {
   tmt = setTimeout(async () => {
     const currentTmt = tmt;
     const cursorPosition = quill.getSelection();
-    dbg('👇 get pos', cursorPosition.index, cursorPosition.length)
+    dbg('👇 get pos', cursorPosition.index, cursorPosition.length);
     if (cursorPosition.length !== 0) {
       // we will not complete if text selected
       return;
