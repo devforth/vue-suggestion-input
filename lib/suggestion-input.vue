@@ -18,7 +18,7 @@ const BlockEmbed = Quill.import('blots/block/embed');
 
 function dbg(title: string,...args: any[]) {
   // return; // comment for debug
-  console.log(title, ...args.map(a =>JSON.stringify(a, null, 1))); 
+  // console.log(title, ...args.map(a =>JSON.stringify(a, null, 1))); 
 }
 
 // @ts-ignore
